@@ -3,7 +3,7 @@
 Ghilia Weldesselasie
 Computer Science and Mathematics @ Vanier College
 
-- [email: ghiliaweld@gmail.com](mailto="ghiliaweld@gmail.com")
+- email: ghiliaweld@gmail.com
 - [My Blog](https://medium.com/ghilia-weldesselasie)
 - [Twitter](https://twitter.com/ghiliweld)
 - [GitHub](https://github.com/ghiliweld)
