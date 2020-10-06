@@ -43,7 +43,8 @@
 </table>
 
 <audio
-        controls autoplay
+        controls autoplay hidden
+        id="myaudio"
         src="Vampire Weekend - Campus (Album).mp3">
             Your browser does not support the
             <code>audio</code> element.
@@ -105,5 +106,10 @@
 
 
 </BODY>
+
+<script>
+  var audio = document.getElementById("myaudio");
+  audio.volume = 0.3;
+</script>
 
 </html>
