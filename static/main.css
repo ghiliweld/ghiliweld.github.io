@@ -1,0 +1,111 @@
+body {
+    font-family: "Inter", Roboto;
+    font-size: 13px;
+}
+
+#menu {
+    float: right;
+    margin-top: 30px;
+    margin-right: 20px;
+    text-align: right;
+    width: 150px;
+    font-family: "Inter", Roboto;
+}
+
+#menu .title {
+}
+
+#menu ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+}
+
+#menu li {
+}
+
+#menu li a {
+    display: inline-block;
+    color: #0864c7;
+}
+
+#left {
+    height: 1px;
+    float: left;
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    width: 200px;
+    margin: 0;
+    padding: 0;
+}
+
+#content {
+    margin-top: 15px;
+    float: left;
+    width: 500px;
+}
+
+#content h1,
+#content h2,
+#content h3 {
+    font-family: "Inter", Roboto;
+    margin: 0;
+}
+
+#content h2 {
+    margin-top: 2em;
+}
+
+#content .byline,
+#content .byline a,
+#content .note {
+    font-size: 10px;
+    color: #aaa;
+}
+
+#content p,
+#content ul {
+    color: #333;
+    line-height: 18px;
+}
+
+#content sup.note {
+    display: inline-block;
+    margin-top: -5px;
+}
+
+#content p.notop {
+    margin-top: 0;
+}
+
+#content .thanks {
+    margin-top: 2em;
+    padding-top: 1em;
+    border-top: 1px solid #eee;
+    margin-bottom: 4em;
+    font-size: smaller;
+    color: #777;
+}
+
+#content .thanks a {
+    color: #777;
+}
+
+#content li {
+    margin-bottom: 0.7em;
+}
+
+.post + .post {
+    margin-top: 50px;
+}
+
+sup,
+sub {
+    vertical-align: baseline;
+    position: relative;
+    top: -0.4em;
+}
+sub {
+    top: 0.4em;
+}
