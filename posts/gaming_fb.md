@@ -1,15 +1,18 @@
+# Lessons Learned from Trying to Game the Flashbots Auction
+
 After following the MEV space for a while, I wanted to try my hand at building a searcher bot during my winter break from school. I had an idea for an interesting sandwiching strategy (might write about it later), but since my bot would be using flashbots I'd have to find a way to win the flashbots auction while still maximizing profits. Sandwiching is a competitive field and so vying for the same sandwiching opportunity as countless other searchers would force me to give away profits to guarantee winning the auction. You walk away with less, but at least it's something.
 
-But what if there was a way to game the auctions so that you can secure a spot at the top of a block *without* giving away most of your profit? It's like having your cake and eating it too, but the cake is money (loads of it). My attempt at doing so is what this post is about. Althought it didn't work, I still think it wasn't a terrible idea and I learned something new about geth in the end.
+But what if there was a way to game the auctions so that you can secure a spot at the top of a block _without_ giving away most of your profit? It's like having your cake and eating it too, but the cake is money (loads of it). My attempt at doing so is what this post is about. Althought it didn't work, I still think it wasn't a terrible idea and I learned something new about geth in the end.
 
 ## Some Background
 
 For my searchers already familiar with flashbots, recall that bundles are sorted by effective gas price (`mevGasPrice` in mev-geth, i may also refer to it as "score"). Searchers aiming for the same opportunity in a block have to outbid other searchers for it, leaving barely any profit for themselves, since only one searcher can profit from the opportunity.
 
 Recall some properties about flashbots bundles and the auction:
+
 - `mevGasPrice := [delta_coinbase + (gasUsed * gasPrice)] / gasUsed` where `delta_coinbase` is the amount directly sent to the miner's coinbase address. (note: it's a really a sum of `gasUsed * gasPrice` across all txs in a bundle, but this definition is simpler for what I want to show)
 - if we don't make any direct payments to the miner (i.e. `delta_coinbase = 0`) then `mevGasPrice = gasPrice`.
-- if any tx in a bundle reverts then the bundle won't land onchain *unless* the hash of the tx in question is included in the `revertingTxHashes` field of our bundle request.
+- if any tx in a bundle reverts then the bundle won't land onchain _unless_ the hash of the tx in question is included in the `revertingTxHashes` field of our bundle request.
 
 We can look at the effectice gas price as a measure of "profit per compute" for the miner, and so to maximize revenue for the miner flashbots prioritizes bundles that pay more per gas used. Making a direct payment to the miner requires additional gas and so it's more economical to omit the direct payment and pay by upping the gas price on your swaps (or wtv txs your strat entails).
 
@@ -20,6 +23,7 @@ I'm lazy and I only had about 2 weeks until I started school again, so I wasn't 
 ## The Strategy
 
 The strat entailed making use of this fun little fact about gas limits:
+
 > [I]f you put a gas limit of 50,000 for a simple ETH transfer, the EVM would consume 21,000, and you would get back the remaining 29,000. However, if you specify too little gas, for example, a gas limit of 20,000 for a simple ETH transfer, the EVM will consume your 20,000 gas units attempting to fulfill the transaction, but it will not complete. The EVM then reverts any changes, but since the miner has already done 20k gas units worth of work, that gas is consumed.
 
 from [ethereum.org](https://ethereum.org/en/developers/docs/gas/#what-is-gas-limit)
@@ -44,7 +48,7 @@ if receipt.Status == types.ReceiptStatusFailed && !containsHash(bundle.Reverting
 
 The first line applies the tx and returns a receipt and any errors encoutered. If the receipt showed the tx failed and reverted and wasn't included in our bundle's `revertingTxHashes` then we would throw an error and reject the bundle. But if we did include our tx in the `revertingTxHashes` then our method would proceed as normal and add our `gasUsed` and `gasPrice` to the tally, gaming the flashbots auction for the low. I thought the `err` variable was interesting but didn't give it much thought at first. That proved to be a fatal mistake later on.
 
-So I get to testing, submiting my bundles with this lil hack thinking it's gonna go through. That's when I get hit with an `intrinsic gas too low` error saying I need to supply 21k gas instead of just 1 gas. After some digging I found out this wasn't a flashbots error but rather an [error that geth itself was throwing](https://github.com/ethereum/go-ethereum/blob/master/core/state_transition.go#L298) (coming from `core.ApplyTransaction`). Turns out geth *won't even broadcast* a tx destined to fail at all, which makes sense since that's pointless compute being spent by the miner for no real reason. Unfortunately, my strategy depended on the fact that we were intentionally letting a tx land onchain so it would fail, and geth completely foiled those plans.
+So I get to testing, submiting my bundles with this lil hack thinking it's gonna go through. That's when I get hit with an `intrinsic gas too low` error saying I need to supply 21k gas instead of just 1 gas. After some digging I found out this wasn't a flashbots error but rather an [error that geth itself was throwing](https://github.com/ethereum/go-ethereum/blob/master/core/state_transition.go#L298) (coming from `core.ApplyTransaction`). Turns out geth _won't even broadcast_ a tx destined to fail at all, which makes sense since that's pointless compute being spent by the miner for no real reason. Unfortunately, my strategy depended on the fact that we were intentionally letting a tx land onchain so it would fail, and geth completely foiled those plans.
 
 ---
 
