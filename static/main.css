@@ -1,6 +1,25 @@
 body {
     font-family: "Inter", Roboto;
-    font-size: 13px;
+    font-size: 14px;
+}
+
+.layout {
+    float: right;
+
+    display: grid;
+    grid:
+        "menu" auto
+        "art" 1fr
+        "." auto
+        / 1fr;
+    gap: 100%;
+}
+
+.menu {
+    grid-area: menu;
+}
+.art {
+    grid-area: art;
 }
 
 #menu {
@@ -8,8 +27,15 @@ body {
     margin-top: 30px;
     margin-right: 20px;
     text-align: right;
-    width: 150px;
     font-family: "Inter", Roboto;
+}
+
+#art pre {
+    float: right;
+    position: relative;
+    /* display: flex; */
+    padding-top: 5%;
+    padding-right: 25%;
 }
 
 #menu .title {
@@ -26,7 +52,7 @@ body {
 
 #menu li a {
     display: inline-block;
-    color: #0864c7;
+    color: rgb(129, 133, 137); /*#0864c7;*/
 }
 
 #left {
@@ -61,7 +87,7 @@ body {
 #content .byline a,
 #content .note {
     font-size: 10px;
-    color: #aaa;
+    color: rgb(129, 133, 137);
 }
 
 #content p,
@@ -89,7 +115,7 @@ body {
 }
 
 #content .thanks a {
-    color: #777;
+    color: rgb(129, 133, 137);
 }
 
 #content li {
@@ -108,4 +134,26 @@ sub {
 }
 sub {
     top: 0.4em;
+}
+
+code {
+    font-family: Consolas, "courier new";
+    color: crimson;
+    background-color: #f1f1f1;
+    padding: 2px;
+    font-size: 105%;
+}
+
+pre code {
+    display: block;
+    background: none;
+    white-space: pre;
+    -webkit-overflow-scrolling: touch;
+    max-width: 100%;
+    min-width: 100px;
+    padding: 0;
+}
+
+a {
+    color: rgb(129, 133, 137);
 }

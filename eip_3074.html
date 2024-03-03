@@ -1,0 +1,225 @@
+<html>
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+            rel="stylesheet"
+        />
+
+        <link rel="stylesheet" href="./static/main.css" />
+        <meta charset="utf-8" />
+        <title>Ghilia Weldesselasie</title>
+    </head>
+    <body>
+        <div id="menu">
+            <span class="title">Ghilia Weldesselasie</span>
+            <ul>
+                <li>
+                    <a href="./index.html">Home</a>
+                </li>
+                <li>
+                    <a href="./eip_3074.html">Frontrunning Post EIP 3074</a>
+                </li>
+                <li>
+                    <a href="./gaming_fb.html">Gaming The Flashbots Auction</a>
+                </li>
+            </ul>
+
+            <!-- <img
+                src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c7/Contour3D.jpg/580px-Contour3D.jpg"
+                height="200"
+            /> -->
+
+            <pre>
+             (\___/)
+             (^ V ^)
+             (|___|)
+              "   "
+            </pre>
+        </div>
+        <div id="art"></div>
+        <div id="left">&nbsp;</div>
+        <div id="content">
+            <div id="content">
+                <h1>Frontrunning Post EIP-3074</h1>
+                <p>
+                    Are you reading up on new
+                    <a href="https://eips.ethereum.org/all">EIPs</a> for alpha,
+                    anon? One of my favourite pastimes is trying to predict the
+                    landscape of MEV in the near future. I sometimes find myself
+                    getting ideas for strategies that might be profitable later
+                    on, just not now.
+                </p>
+                <p>
+                    Reading up on
+                    <a href="https://eips.ethereum.org/EIPS/eip-3074"
+                        >EIP-3074</a
+                    >
+                    was one of those moments. I&#39;ll be sharing an interesting
+                    frontrunning strategy I came up with that could work post
+                    3074.
+                </p>
+                <p>
+                    I&#39;m not usually one for posting predictions, but some
+                    interesting ideas came up from this that I felt should be
+                    published.
+                </p>
+                <h2 id="a-primer-on-eip-3074">A Primer on EIP-3074</h2>
+                <p>
+                    One glaring UX problem on Ethereum is the fact that
+                    Externally Owned Accounts (basically your wallet) can&#39;t
+                    make multiple calls to different smart contracts in one tx
+                    (multicalls). That&#39;s why we have the approve tx -&gt;
+                    swap tx flow for ERC20 swaps on DEXs today. EIP-3074 solves
+                    this, among other things. It doesn&#39;t let you make
+                    multicalls from your EOA directly, but it does allow a
+                    contract to make calls to other contracts <em>as if</em> it
+                    was coming from your EOA (i.e.
+                    <code>msg.sender = EOA</code>) which achieves the same
+                    thing.
+                </p>
+                <p>
+                    The EIP introduces two new opcodes, <code>AUTH</code> and
+                    <code>AUTHCALL</code>, and a new solidity built-in function
+                    <code>authorize</code>. The contract we make the 3074-tx
+                    through is called an <strong>invoker</strong>. The flow is
+                    simple:
+                </p>
+                <ul>
+                    <li>
+                        a user signs a <code>commitment</code> (hash) of what
+                        they want their tx to do, and signs it
+                    </li>
+                    <li>
+                        the user calls the invoker and passes in what contract
+                        they want to call, along with the calldata, and the
+                        signature of the commitment
+                    </li>
+                    <li>
+                        the invoker hashes the args to reconstruct the
+                        commitment
+                    </li>
+                    <li>
+                        <code>authorize(commitment, signature)</code> returns
+                        the user&#39;s EOA address and also loads it in
+                        temporary storage by the <code>AUTH</code> opcode
+                    </li>
+                    <li>
+                        the invoker makes an <code>AUTHCALL</code> with the
+                        contract and calldata (like
+                        <code>contract.authcall(calldata);</code>)
+                    </li>
+                    <li>
+                        the <code>msg.sender</code> in that authcall will be our
+                        user&#39;s address even thought the invoker (a contract)
+                        is making the call
+                    </li>
+                </ul>
+                <p>
+                    Note that since a signature and commitment is all that&#39;s
+                    needed to get the EOA address, the user doesn&#39;t have to
+                    submit this themselves. In fact, someone could pay the gas
+                    fees for them and submit it on their behalf. Sponsoring gas
+                    fees was also a motivation for the EIP.
+                </p>
+                <p>An invoker contract will look something like this:</p>
+                <p>
+                    {% twitter
+                    <a
+                        href="https://twitter.com/lightclients/status/1371911261001183232"
+                        >https://twitter.com/lightclients/status/1371911261001183232</a
+                    >
+                    %}
+                </p>
+                <h2 id="extract-and-rewrap">Extract and Rewrap</h2>
+                <p>
+                    One way of thinking about 3074 txs is like multicalls that
+                    <em>anyone</em> can do on your behalf provided they have the
+                    commitment and your signature. The individuals calls to
+                    other contracts will look like regular internal contract
+                    calls to anyone viewing your transaction. This is where the
+                    fun part starts. If you&#39;ve read
+                    <a
+                        href="https://www.paradigm.xyz/2020/08/ethereum-is-a-dark-forest/"
+                        >Ethereum is a Dark Forest</a
+                    >
+                    then you&#39;ll know that advanced searchers are lurking in
+                    the mempool for any profitable transactions, even going so
+                    far as to look over <em>internal calls</em> that they can
+                    frontrun. What happens when a 3074 tx is making internal
+                    calls that we can not only frontrun, but extract and include
+                    in our tx instead? A quick example can demonstrate why a
+                    searcher would do that.
+                </p>
+                <pre><code class="lang-md">sandwich tx <span class="hljs-number">1</span> (buy)                                         sandwich tx {
+                victim's <span class="hljs-number">3074</span> tx {                                              - sandwich buy
+                    - <span class="hljs-type">DEX</span> <span class="hljs-built_in">swap</span> (this <span class="hljs-keyword">is</span> an <span class="hljs-keyword">internal</span> call)       vs              - victim's <span class="hljs-type">DEX</span> <span class="hljs-built_in">swap</span> (that we extracted)
+                }                                                               - sandwich sell
+                sandwich tx <span class="hljs-number">2</span> (sell)                                        }
+                </code></pre>
+                <p>
+                    We were able to sandwich an incoming 3074 tx the traditional
+                    way (over 3 txs) or we could extract the commitment and
+                    signature details from the pending DEX swap and place it in
+                    our own tx, that way we could execute a sandwich in only one
+                    tx! We get some interesting results from this:
+                </p>
+                <ul>
+                    <li>
+                        we are paying a victim&#39;s gas fees in exchange for
+                        screwing them over by sandwiching them (chaotic
+                        neutral?)
+                    </li>
+                    <li>
+                        we save on gas since we&#39;re executing a sandwich in 1
+                        tx
+                    </li>
+                    <li>
+                        we can take out a flashloan to sandwich a trade instead
+                        of putting up our own capital
+                    </li>
+                </ul>
+                <p>
+                    What actually got me looking at EIP-3074 in the first place
+                    was because I wanted to take out a flashloan to execute a
+                    sandwich, which isn&#39;t possible over 3 txs since I&#39;d
+                    need to return what I borrowed in the same tx. Where
+                    arbitrage was the only strategy that could use flashloans,
+                    3074 now opens up flashloans for use in many more MEV
+                    strategies.
+                </p>
+                <hr />
+                <p>
+                    I don&#39;t think this sandwich scenario is any cause for
+                    concern, the existence of EIP-3074 didn&#39;t create new a
+                    MEV opportunity it just changed how we could profit from it.
+                    Notice how even if we didn&#39;t extract the internal call,
+                    the swap was still very much sandwichable. The only
+                    difference is someone with enough capital could have taken
+                    full advantage of the sandwich in the first scenario,
+                    whereas the second one doesn&#39;t have any capital
+                    requirements (besides gas fees ofc). I think that&#39;s
+                    pretty cool, it levels the playing field even more in my
+                    opinion.
+                </p>
+                <p>
+                    That being said, that only applies with current MEV
+                    strategies. There&#39;s no telling what 3074 opens up for
+                    searchers. Remember, unless implemented properly, a call to
+                    an invoker can be frontrun and a tx coming from your EOA can
+                    be included as an internal call in anyone&#39;s tx. If
+                    developers want to mitigate against any unpredictable
+                    attacks they may want to add a
+                    <code>address relayer</code> parameter to the
+                    <code>sponsor</code> function above so the invoker can
+                    assert the sponsor is who we expect it to be (<code
+                        >require(msg.sender == relayer);</code
+                    >). This at least preserves the current MEV status quo, and
+                    won&#39;t add on to it.
+                </p>
+                <p>But otherwise, gud eip honestly.</p>
+            </div>
+        </div>
+    </body>
+</html>
