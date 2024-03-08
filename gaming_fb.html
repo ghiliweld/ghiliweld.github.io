@@ -13,22 +13,12 @@
     </head>
     <body>
         <section class="layout">
-            <div class="menu" id="menu">
-                <span class="title">Ghilia Weldesselasie ^_^</span>
-                <ul>
-                    <li>
-                        <a href="./index.html">Home</a>
-                    </li>
-                    <li>
-                        <a href="./eip_3074.html">Frontrunning Post EIP 3074</a>
-                    </li>
-                    <li>
-                        <a href="./gaming_fb.html"
-                            >Gaming The Flashbots Auction</a
-                        >
-                    </li>
-                </ul>
-            </div>
+            <div
+                class="menu"
+                id="menu"
+                hx-get="menu.html"
+                hx-trigger="load"
+            ></div>
             <div class="art" id="art">
                 <pre>
                             (\___/)
@@ -280,4 +270,6 @@
             </div>
         </div>
     </body>
+
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
 </html>
