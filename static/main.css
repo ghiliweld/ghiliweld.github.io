@@ -4,6 +4,7 @@ body {
 }
 
 .layout {
+    width: 35%;
     float: right;
 
     display: grid;
@@ -61,15 +62,21 @@ body {
     display: block;
     min-width: 0;
     overflow: hidden;
-    width: 200px;
+    width: 14%; /* 200px; */
     margin: 0;
     padding: 0;
 }
 
 #content {
     margin-top: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px;
     float: left;
-    width: 500px;
+    width: 45%; /* 500px; */
+}
+
+#content div {
+    width: inherit;
 }
 
 #content h1,

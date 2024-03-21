@@ -38,166 +38,156 @@
         </section>
         <div id="left">&nbsp;</div>
         <div id="content">
-            <div id="content">
-                <h1>
-                    Lessons Learned from Trying to Game the Flashbots Auction
-                </h1>
-                <p>
-                    After following the MEV space for a while, I wanted to try
-                    my hand at building a searcher bot during my winter break
-                    from school. I had an idea for an interesting sandwiching
-                    strategy (might write about it later), but since my bot
-                    would be using flashbots I&#39;d have to find a way to win
-                    the flashbots auction while still maximizing profits.
-                    Sandwiching is a competitive field and so vying for the same
-                    sandwiching opportunity as countless other searchers would
-                    force me to give away profits to guarantee winning the
-                    auction. You walk away with less, but at least it&#39;s
-                    something.
-                </p>
-                <p>
-                    But what if there was a way to game the auctions so that you
-                    can secure a spot at the top of a block
-                    <em>without</em> giving away most of your profit? It&#39;s
-                    like having your cake and eating it too, but the cake is
-                    money (loads of it). My attempt at doing so is what this
-                    post is about. Althought it didn&#39;t work, I still think
-                    it wasn&#39;t a terrible idea and I learned something new
-                    about geth in the end.
-                </p>
-                <h2 id="some-background">Some Background</h2>
-                <p>
-                    For my searchers already familiar with flashbots, recall
-                    that bundles are sorted by effective gas price (<code
-                        >mevGasPrice</code
+            <h1>Lessons Learned from Trying to Game the Flashbots Auction</h1>
+            <p>
+                After following the MEV space for a while, I wanted to try my
+                hand at building a searcher bot during my winter break from
+                school. I had an idea for an interesting sandwiching strategy
+                (might write about it later), but since my bot would be using
+                flashbots I&#39;d have to find a way to win the flashbots
+                auction while still maximizing profits. Sandwiching is a
+                competitive field and so vying for the same sandwiching
+                opportunity as countless other searchers would force me to give
+                away profits to guarantee winning the auction. You walk away
+                with less, but at least it&#39;s something.
+            </p>
+            <p>
+                But what if there was a way to game the auctions so that you can
+                secure a spot at the top of a block
+                <em>without</em> giving away most of your profit? It&#39;s like
+                having your cake and eating it too, but the cake is money (loads
+                of it). My attempt at doing so is what this post is about.
+                Althought it didn&#39;t work, I still think it wasn&#39;t a
+                terrible idea and I learned something new about geth in the end.
+            </p>
+            <h2 id="some-background">Some Background</h2>
+            <p>
+                For my searchers already familiar with flashbots, recall that
+                bundles are sorted by effective gas price (<code
+                    >mevGasPrice</code
+                >
+                in mev-geth, i may also refer to it as &quot;score&quot;).
+                Searchers aiming for the same opportunity in a block have to
+                outbid other searchers for it, leaving barely any profit for
+                themselves, since only one searcher can profit from the
+                opportunity.
+            </p>
+            <p>
+                Recall some properties about flashbots bundles and the auction:
+            </p>
+            <ul>
+                <li>
+                    <code
+                        >mevGasPrice := [delta_coinbase + (gasUsed * gasPrice)]
+                        / gasUsed</code
                     >
-                    in mev-geth, i may also refer to it as &quot;score&quot;).
-                    Searchers aiming for the same opportunity in a block have to
-                    outbid other searchers for it, leaving barely any profit for
-                    themselves, since only one searcher can profit from the
-                    opportunity.
-                </p>
+                    where <code>delta_coinbase</code> is the amount directly
+                    sent to the miner&#39;s coinbase address. (note: it&#39;s a
+                    really a sum of <code>gasUsed * gasPrice</code> across all
+                    txs in a bundle, but this definition is simpler for what I
+                    want to show)
+                </li>
+                <li>
+                    if we don&#39;t make any direct payments to the miner (i.e.
+                    <code>delta_coinbase = 0</code>) then
+                    <code>mevGasPrice = gasPrice</code>.
+                </li>
+                <li>
+                    if any tx in a bundle reverts then the bundle won&#39;t land
+                    onchain <em>unless</em> the hash of the tx in question is
+                    included in the <code>revertingTxHashes</code> field of our
+                    bundle request.
+                </li>
+            </ul>
+            <p>
+                We can look at the effectice gas price as a measure of
+                &quot;profit per compute&quot; for the miner, and so to maximize
+                revenue for the miner flashbots prioritizes bundles that pay
+                more per gas used. Making a direct payment to the miner requires
+                additional gas and so it&#39;s more economical to omit the
+                direct payment and pay by upping the gas price on your swaps (or
+                wtv txs your strat entails).
+            </p>
+            <p>
+                If we have to up the gas price on our txs to ensure we win the
+                opportunity, then we need to lower our gas used in order to bank
+                more profit. Hence why you&#39;ve probably noticed your
+                favourite 0xAnimeFemboy mev account on the tl shilling yul+.
+                Writing the most gas efficient contract means you can safely up
+                your gas price which means easy $$$.
+            </p>
+            <p>
+                I&#39;m lazy and I only had about 2 weeks until I started school
+                again, so I wasn&#39;t about to become an optimizoooor. Instead,
+                I was gonna try gaming the auction. Someone already gamed the
+                auction before, where they
+                <a
+                    href="https://twitter.com/bertcmiller/status/1407305924600029189"
+                    >reduced their gas price after their bundle got merged</a
+                >. I was gonna try using way less gas than flashbots would
+                expect.
+            </p>
+            <h2 id="the-strategy">The Strategy</h2>
+            <p>
+                The strat entailed making use of this fun little fact about gas
+                limits:
+            </p>
+            <blockquote>
                 <p>
-                    Recall some properties about flashbots bundles and the
-                    auction:
+                    [I]f you put a gas limit of 50,000 for a simple ETH
+                    transfer, the EVM would consume 21,000, and you would get
+                    back the remaining 29,000. However, if you specify too
+                    little gas, for example, a gas limit of 20,000 for a simple
+                    ETH transfer, the EVM will consume your 20,000 gas units
+                    attempting to fulfill the transaction, but it will not
+                    complete. The EVM then reverts any changes, but since the
+                    miner has already done 20k gas units worth of work, that gas
+                    is consumed.
                 </p>
-                <ul>
-                    <li>
-                        <code
-                            >mevGasPrice := [delta_coinbase + (gasUsed *
-                            gasPrice)] / gasUsed</code
-                        >
-                        where <code>delta_coinbase</code> is the amount directly
-                        sent to the miner&#39;s coinbase address. (note:
-                        it&#39;s a really a sum of
-                        <code>gasUsed * gasPrice</code> across all txs in a
-                        bundle, but this definition is simpler for what I want
-                        to show)
-                    </li>
-                    <li>
-                        if we don&#39;t make any direct payments to the miner
-                        (i.e. <code>delta_coinbase = 0</code>) then
-                        <code>mevGasPrice = gasPrice</code>.
-                    </li>
-                    <li>
-                        if any tx in a bundle reverts then the bundle won&#39;t
-                        land onchain <em>unless</em> the hash of the tx in
-                        question is included in the
-                        <code>revertingTxHashes</code> field of our bundle
-                        request.
-                    </li>
-                </ul>
-                <p>
-                    We can look at the effectice gas price as a measure of
-                    &quot;profit per compute&quot; for the miner, and so to
-                    maximize revenue for the miner flashbots prioritizes bundles
-                    that pay more per gas used. Making a direct payment to the
-                    miner requires additional gas and so it&#39;s more
-                    economical to omit the direct payment and pay by upping the
-                    gas price on your swaps (or wtv txs your strat entails).
-                </p>
-                <p>
-                    If we have to up the gas price on our txs to ensure we win
-                    the opportunity, then we need to lower our gas used in order
-                    to bank more profit. Hence why you&#39;ve probably noticed
-                    your favourite 0xAnimeFemboy mev account on the tl shilling
-                    yul+. Writing the most gas efficient contract means you can
-                    safely up your gas price which means easy $$$.
-                </p>
-                <p>
-                    I&#39;m lazy and I only had about 2 weeks until I started
-                    school again, so I wasn&#39;t about to become an
-                    optimizoooor. Instead, I was gonna try gaming the auction.
-                    Someone already gamed the auction before, where they
-                    <a
-                        href="https://twitter.com/bertcmiller/status/1407305924600029189"
-                        >reduced their gas price after their bundle got
-                        merged</a
-                    >. I was gonna try using way less gas than flashbots would
-                    expect.
-                </p>
-                <h2 id="the-strategy">The Strategy</h2>
-                <p>
-                    The strat entailed making use of this fun little fact about
-                    gas limits:
-                </p>
-                <blockquote>
-                    <p>
-                        [I]f you put a gas limit of 50,000 for a simple ETH
-                        transfer, the EVM would consume 21,000, and you would
-                        get back the remaining 29,000. However, if you specify
-                        too little gas, for example, a gas limit of 20,000 for a
-                        simple ETH transfer, the EVM will consume your 20,000
-                        gas units attempting to fulfill the transaction, but it
-                        will not complete. The EVM then reverts any changes, but
-                        since the miner has already done 20k gas units worth of
-                        work, that gas is consumed.
-                    </p>
-                </blockquote>
-                <p>
-                    from
-                    <a
-                        href="https://ethereum.org/en/developers/docs/gas/#what-is-gas-limit"
-                        >ethereum.org</a
-                    >
-                </p>
-                <p>
-                    Note that the definition of the effective gas price
-                    didn&#39;t require that any of our smart contract txs pay
-                    the bribe to the miner. Say we included an eth transfer in
-                    our bundle that handled our bribe, and that we set the gas
-                    limit to <code>1 gas</code> and the gas price to
-                    <code>100k gwei/gas</code>. We&#39;d need to allow this tx
-                    to revert in our bundle (via <code>revertingTxHashes</code>)
-                    since any tx with a gas limit lower than 21k gas would
-                    revert. Our bundle could then land onchain, revert, and only
-                    consume 1 gas in doing so. This will only cost us
-                    <code>1 gas * 100k gwei/gas = 100k gwei</code> and our
-                    bundle&#39;s score would be boosted by
-                    <code>100k</code> which guarantees us first priority in the
-                    auction by a large margin. We can then safely set the gas
-                    price on our swaps to whatever the <code>base_fee</code> was
-                    that block since we don&#39;t wanna compete on gas price
-                    with high gas txs.
-                </p>
-                <p>
-                    Those familiar with geth have probably noticed the flaw in
-                    this strategy by now and already know where this is going,
-                    but I won&#39;t spoil the (unfortunate) surprise just yet.
-                </p>
-                <h2 id="the-attempt">The Attempt</h2>
-                <p>
-                    Before my attempt, I needed to check if this would be
-                    possible in mev-geth. So I took a look at the
-                    <a
-                        href="https://github.com/flashbots/mev-geth/blob/master/miner/worker.go#L1414"
-                        ><code>computeBundleGas</code></a
-                    >
-                    method, which is what returns our bundle&#39;s score
-                    (<code>mevGasPrice</code>). These lines in particular were
-                    of interest.
-                </p>
-                <pre><code class="lang-go">receipt, err := core.ApplyTransaction(w<span class="hljs-selector-class">.chainConfig</span>, w<span class="hljs-selector-class">.chain</span>, &amp;w<span class="hljs-selector-class">.coinbase</span>, gasPool, state, <span class="hljs-selector-tag">header</span>, tx, &amp;tempGasUsed, *w<span class="hljs-selector-class">.chain</span><span class="hljs-selector-class">.GetVMConfig</span>())
+            </blockquote>
+            <p>
+                from
+                <a
+                    href="https://ethereum.org/en/developers/docs/gas/#what-is-gas-limit"
+                    >ethereum.org</a
+                >
+            </p>
+            <p>
+                Note that the definition of the effective gas price didn&#39;t
+                require that any of our smart contract txs pay the bribe to the
+                miner. Say we included an eth transfer in our bundle that
+                handled our bribe, and that we set the gas limit to
+                <code>1 gas</code> and the gas price to
+                <code>100k gwei/gas</code>. We&#39;d need to allow this tx to
+                revert in our bundle (via <code>revertingTxHashes</code>) since
+                any tx with a gas limit lower than 21k gas would revert. Our
+                bundle could then land onchain, revert, and only consume 1 gas
+                in doing so. This will only cost us
+                <code>1 gas * 100k gwei/gas = 100k gwei</code> and our
+                bundle&#39;s score would be boosted by <code>100k</code> which
+                guarantees us first priority in the auction by a large margin.
+                We can then safely set the gas price on our swaps to whatever
+                the <code>base_fee</code> was that block since we don&#39;t
+                wanna compete on gas price with high gas txs.
+            </p>
+            <p>
+                Those familiar with geth have probably noticed the flaw in this
+                strategy by now and already know where this is going, but I
+                won&#39;t spoil the (unfortunate) surprise just yet.
+            </p>
+            <h2 id="the-attempt">The Attempt</h2>
+            <p>
+                Before my attempt, I needed to check if this would be possible
+                in mev-geth. So I took a look at the
+                <a
+                    href="https://github.com/flashbots/mev-geth/blob/master/miner/worker.go#L1414"
+                    ><code>computeBundleGas</code></a
+                >
+                method, which is what returns our bundle&#39;s score
+                (<code>mevGasPrice</code>). These lines in particular were of
+                interest.
+            </p>
+            <pre><code class="lang-go">receipt, err := core.ApplyTransaction(w<span class="hljs-selector-class">.chainConfig</span>, w<span class="hljs-selector-class">.chain</span>, &amp;w<span class="hljs-selector-class">.coinbase</span>, gasPool, state, <span class="hljs-selector-tag">header</span>, tx, &amp;tempGasUsed, *w<span class="hljs-selector-class">.chain</span><span class="hljs-selector-class">.GetVMConfig</span>())
                 <span class="hljs-keyword">if</span> err != nil {
                     return simulatedBundle{}, err
                 }
@@ -205,73 +195,71 @@
                     return simulatedBundle{}, errors.New(<span class="hljs-string">"failed tx"</span>)
                 }
                 </code></pre>
-                <p>
-                    The first line applies the tx and returns a receipt and any
-                    errors encoutered. If the receipt showed the tx failed and
-                    reverted and wasn&#39;t included in our bundle&#39;s
-                    <code>revertingTxHashes</code> then we would throw an error
-                    and reject the bundle. But if we did include our tx in the
-                    <code>revertingTxHashes</code> then our method would proceed
-                    as normal and add our <code>gasUsed</code> and
-                    <code>gasPrice</code> to the tally, gaming the flashbots
-                    auction for the low. I thought the <code>err</code> variable
-                    was interesting but didn&#39;t give it much thought at
-                    first. That proved to be a fatal mistake later on.
-                </p>
-                <p>
-                    So I get to testing, submiting my bundles with this lil hack
-                    thinking it&#39;s gonna go through. That&#39;s when I get
-                    hit with an <code>intrinsic gas too low</code> error saying
-                    I need to supply 21k gas instead of just 1 gas. After some
-                    digging I found out this wasn&#39;t a flashbots error but
-                    rather an
-                    <a
-                        href="https://github.com/ethereum/go-ethereum/blob/master/core/state_transition.go#L298"
-                        >error that geth itself was throwing</a
-                    >
-                    (coming from <code>core.ApplyTransaction</code>). Turns out
-                    geth <em>won&#39;t even broadcast</em> a tx destined to fail
-                    at all, which makes sense since that&#39;s pointless compute
-                    being spent by the miner for no real reason. Unfortunately,
-                    my strategy depended on the fact that we were intentionally
-                    letting a tx land onchain so it would fail, and geth
-                    completely foiled those plans.
-                </p>
-                <hr />
-                <p>
-                    Like I said in the beginning, this wasn&#39;t my worst idea
-                    ever. I just wasn&#39;t expecting geth to intervene like
-                    that when I saw on ethereum&#39;s website that any gas under
-                    21k is consumed whether the tx reverts or not. I later
-                    realized that that was describing the EVM&#39;s behaviour,
-                    not the client&#39;s (geth) which was free to implement any
-                    checks beforehand. Unfortunate.
-                </p>
-                <p>
-                    Edit: Apparently this is standard client behaviour as
-                    described in section 6 of the
-                    <a href="https://ethereum.github.io/yellowpaper/paper.pdf"
-                        >yellowpaper</a
-                    >
-                    and not unique to geth (s/o to the homie
-                    <a href="https://twitter.com/0xalpharush">@0xalpharush</a>
-                    for pointing this out). But that was in the Berlin version
-                    of the yellowpaper, so now I&#39;m still not sure if the
-                    official site was completely wrong or just outdated.
-                    That&#39;s on me though, I should&#39;ve just read the code
-                    for myself first instead of going off the website.
-                </p>
-                <p>
-                    I&#39;m still not interested in being an optimizooor despite
-                    not being able to game the auction, and I learned just how
-                    involved building a competitive searcher bot is over my
-                    winter break. It&#39;s definitely not something I can slap
-                    together in 2 weeks like I originally planned. I&#39;ll see
-                    how I end up going about this mev shit but I&#39;ll have to
-                    take my time with it if I wanna be competitive.
-                </p>
-                <p>Thank you for reading, and see you in the mempool :)</p>
-            </div>
+            <p>
+                The first line applies the tx and returns a receipt and any
+                errors encoutered. If the receipt showed the tx failed and
+                reverted and wasn&#39;t included in our bundle&#39;s
+                <code>revertingTxHashes</code> then we would throw an error and
+                reject the bundle. But if we did include our tx in the
+                <code>revertingTxHashes</code> then our method would proceed as
+                normal and add our <code>gasUsed</code> and
+                <code>gasPrice</code> to the tally, gaming the flashbots auction
+                for the low. I thought the <code>err</code> variable was
+                interesting but didn&#39;t give it much thought at first. That
+                proved to be a fatal mistake later on.
+            </p>
+            <p>
+                So I get to testing, submiting my bundles with this lil hack
+                thinking it&#39;s gonna go through. That&#39;s when I get hit
+                with an <code>intrinsic gas too low</code> error saying I need
+                to supply 21k gas instead of just 1 gas. After some digging I
+                found out this wasn&#39;t a flashbots error but rather an
+                <a
+                    href="https://github.com/ethereum/go-ethereum/blob/master/core/state_transition.go#L298"
+                    >error that geth itself was throwing</a
+                >
+                (coming from <code>core.ApplyTransaction</code>). Turns out geth
+                <em>won&#39;t even broadcast</em> a tx destined to fail at all,
+                which makes sense since that&#39;s pointless compute being spent
+                by the miner for no real reason. Unfortunately, my strategy
+                depended on the fact that we were intentionally letting a tx
+                land onchain so it would fail, and geth completely foiled those
+                plans.
+            </p>
+            <hr />
+            <p>
+                Like I said in the beginning, this wasn&#39;t my worst idea
+                ever. I just wasn&#39;t expecting geth to intervene like that
+                when I saw on ethereum&#39;s website that any gas under 21k is
+                consumed whether the tx reverts or not. I later realized that
+                that was describing the EVM&#39;s behaviour, not the
+                client&#39;s (geth) which was free to implement any checks
+                beforehand. Unfortunate.
+            </p>
+            <p>
+                Edit: Apparently this is standard client behaviour as described
+                in section 6 of the
+                <a href="https://ethereum.github.io/yellowpaper/paper.pdf"
+                    >yellowpaper</a
+                >
+                and not unique to geth (s/o to the homie
+                <a href="https://twitter.com/0xalpharush">@0xalpharush</a>
+                for pointing this out). But that was in the Berlin version of
+                the yellowpaper, so now I&#39;m still not sure if the official
+                site was completely wrong or just outdated. That&#39;s on me
+                though, I should&#39;ve just read the code for myself first
+                instead of going off the website.
+            </p>
+            <p>
+                I&#39;m still not interested in being an optimizooor despite not
+                being able to game the auction, and I learned just how involved
+                building a competitive searcher bot is over my winter break.
+                It&#39;s definitely not something I can slap together in 2 weeks
+                like I originally planned. I&#39;ll see how I end up going about
+                this mev shit but I&#39;ll have to take my time with it if I
+                wanna be competitive.
+            </p>
+            <p>Thank you for reading, and see you in the mempool :)</p>
         </div>
     </body>
 
