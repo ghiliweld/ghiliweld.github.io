@@ -1,0 +1,132 @@
+<html>
+    <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap"
+            rel="stylesheet"
+        />
+
+        <link rel="stylesheet" href="./static/main.css" />
+        <meta charset="utf-8" />
+        <title>Ghilia Weldesselasie</title>
+    </head>
+
+    <body>
+        <section class="layout">
+            <div
+                class="menu"
+                id="menu"
+                hx-get="menu.html"
+                hx-trigger="load"
+            ></div>
+            <div class="art" id="art">
+                <pre>
+                       ^^      (\___/)     ``^^  `
+                 @@@@      ``  (^ V ^)
+              ` @@()@@  ^      (|___|) ^^  ``   `
+                 @@@@           "   "        `
+                 \|    ``^^         ^^^ ``
+              ^   |/    ^^        _         ^^^^^
+                \\|///    ^^^   _(_)_     ^^       `
+                               (_)@(_)`     ```
+                (\___/)         /(_)
+                ( ~ ,~)        \|/    ``
+                /)___|)       \\|//    ^^^  ```
+                 "   "      ``^^^^^ `
+                </pre>
+            </div>
+        </section>
+        <div id="left">&nbsp;</div>
+        <div id="content">
+            <h1 id="why-x-y-k-">Why x*y = k?</h1>
+            <p><img src="./assets/xy=k_would_win.png" alt="" /></p>
+            <p>
+                If you asked me
+                <em
+                    >&quot;why did uniswap catch on the way it did? why did xy =
+                    k win?&quot;</em
+                >
+                before v3 had dropped, the short answer would&#39;ve been:
+            </p>
+            <blockquote>
+                <p>
+                    Well, it&#39;s a really simple exchange mechanism and it
+                    compute trades cheaply. LOBs aren&#39;t feasible onchain
+                    because of the exorbitant cost to put up orders as well as
+                    fill them. The curve it trades along has asymptotes at $x =
+                    0$ and $y = 0$, which ensures the reserves of the AMM are
+                    never depleted. This means the mechanism can always act as a
+                    counterparty for all trades. The market making strategy it
+                    employs is pretty basic which makes it easy for retail to
+                    become LPs and also levels the playing field for retail and
+                    sophisticated players alike (<a
+                        href="https://research.parsec.finance/posts/amm-tradeoff"
+                        >h/t Parsec</a
+                    >). As it spreads liquidity evenly across all prices, it
+                    avoids making directional bets on the risk or numeraire
+                    asset. This lack of optionality contributed to making it
+                    easy as pie to ape in as an LP.
+                </p>
+            </blockquote>
+            <p>
+                V3 changed things when it came out with concentrated liquidity.
+                Concentrated liquidity allowed LPs to provided liquidity within
+                custom price ranges $[p_a, p_b]$ instead of spreading their
+                liquidity over all possible prices, even ones which may never be
+                reached. These positions can even be aggregated together
+                efficiently into a &quot;single&quot; AMM, although it&#39;s
+                best described as a collection of AMMs at certain ticks (buckets
+                of prices).
+            </p>
+            <p>
+                Interestingly, the underlying curves in these ticks are still
+                $xy = k$ curves. This begs the question: is there more to why
+                the team went with the same invariant again aside from its
+                liveness and computational simplicity?
+            </p>
+            <p>
+                Although LPs are assumed to rationally provided liquidity at
+                prices people want to trade on, to collect fees, it is possible
+                for there to be no liquidity at certain prices meaning that
+                <em>always available to trade</em> feature is now moot.
+                Additionally, active liquidity provisioning makes competition
+                stiff for LPs.
+            </p>
+            <p>
+                <em>If it ain&#39;t broke, don&#39;t fix it</em> is an obvious
+                answer here, but it&#39;s not good enough for me.
+            </p>
+            <p>
+                Duality and Penumbra use constant price market makers (think
+                Limit Orders) as their base curve which they then aggregate for
+                users to trade on smoothly.
+                <a
+                    href="https://duality.gitbook.io/duality-documentation/concepts/amms-and-orderbooks"
+                    >Duality aggregates them</a
+                >
+                similarly to V3, whereas
+                <a
+                    href="https://penumbra.zone/blog/dex-arrives-from-the-future/"
+                    >Penumbra uses a routing algorithm</a
+                >
+                that computes the optimal trade over the individual positions.
+            </p>
+            <p>
+                Gyroscope Finance came out with their own construction called a
+                Constant Circle Market Maker, which also spreads liquidity
+                across a range similarly to how V3 does it. However, their
+                invariant is slightly more complicated and thus trades are more
+                expensive to compute (it requires solving a quadratic equation).
+                This makes it strictly worse than a V3 position, which is why
+                you don&#39;t hear about it much. The CCMM was really just a
+                stepping stone to introducing Constant Ellipse Market Makers,
+                which supports asymmetric liquidity and skewing liquidity
+                towards a desired price.
+            </p>
+            <p>TODO: simple proof of how CCMM spreads liquidity evenly</p>
+        </div>
+    </body>
+
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+</html>
