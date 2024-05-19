@@ -6,7 +6,7 @@ It's a simple idea, and by no means novel, but it's fun and it makes me really h
 
 ### Bitcoin
 
-When I was at McGill, I took a reading course where I covered game theory in blockchain networks. One of the lectures I gave on [bitcoin](https://www.notion.so/ghili/Bitcoin-3bd628ae48f34190b06fe34160227f08) helped me really grok why bitcoin is designed the way it is. Namely, I understood how double spending was prevented not only by Proof of Work but also by linking the blocks together. That way, blocks can't be built retroactively and replaced in a newer longest chain. The proof of work in a block must attest to the entire chain before it.
+When I was at McGill, I took a reading course where I covered game theory in blockchain networks. One of the lectures I gave on [bitcoin](https://www.notion.so/ghili/Bitcoin-3bd628ae48f34190b06fe34160227f08) helped me grok why bitcoin is designed the way it is. Namely, I understood how double spending was prevented not only by Proof of Work but also by linking the blocks together. That way, blocks can't be built retroactively and replaced in a newer longest chain. The proof of work in a block must attest to the entire chain before it.
 
 ### Commitment from Interleaved Codes
 
