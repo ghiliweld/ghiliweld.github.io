@@ -61,8 +61,8 @@
                     Well, it&#39;s a really simple exchange mechanism and it
                     compute trades cheaply. LOBs aren&#39;t feasible onchain
                     because of the exorbitant cost to put up orders as well as
-                    fill them. The curve it trades along has asymptotes at $x =
-                    0$ and $y = 0$, which ensures the reserves of the AMM are
+                    fill them. The curve it trades along has asymptotes at \(x =
+                    0\) and \(y = 0\), which ensures the reserves of the AMM are
                     never depleted. This means the mechanism can always act as a
                     counterparty for all trades. The market making strategy it
                     employs is pretty basic which makes it easy for retail to
@@ -79,7 +79,7 @@
             <p>
                 V3 changed things when it came out with concentrated liquidity.
                 Concentrated liquidity allowed LPs to provided liquidity within
-                custom price ranges $[p_a, p_b]$ instead of spreading their
+                custom price ranges \([p_a, p_b]\) instead of spreading their
                 liquidity over all possible prices, even ones which may never be
                 reached. These positions can even be aggregated together
                 efficiently into a &quot;single&quot; AMM, although it&#39;s
@@ -88,7 +88,7 @@
             </p>
             <p>
                 Interestingly, the underlying curves in these ticks are still
-                $xy = k$ curves. This begs the question: is there more to why
+                \(xy = k\) curves. This begs the question: is there more to why
                 the team went with the same invariant again aside from its
                 liveness and computational simplicity?
             </p>
@@ -136,4 +136,10 @@
     </body>
 
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script
+        id="MathJax-script"
+        async
+        src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"
+    ></script>
 </html>
