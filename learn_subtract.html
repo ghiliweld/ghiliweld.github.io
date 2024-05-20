@@ -99,8 +99,10 @@
                 These properties must also hold for erasure code commitments,
                 but code-binding is also required. All commitments must be bound
                 to a single (known) code \(\mathcal{C}\), so that an adversary
-                cannot make any openings to a codeword outside of this code. The
-                linear code \(\mathcal{C}\) is a linear subspace, and the
+                cannot make any openings to a codeword outside of this code.
+            </p>
+            <p>
+                The linear code \(\mathcal{C}\) is a linear subspace, and the
                 vectors in it are called codewords. As the vector \(\textbf{w}\)
                 in the commitment is assumed to be a random linear combination
                 of codewords, \(\textbf{w}\) must also be a codeword. Meaning
@@ -110,16 +112,21 @@
                 check if an opening \(\textbf{X}_j\) is in the code by checking
                 if \(\textbf{H}\textbf{X}_j = 0\), but then you might allow
                 non-codewords to sneak past into the commitment if you don&#39;t
-                also check \(\textbf{w}\). This is what give this scheme
-                code-binding. We also want to check if \(\textbf{w}_j =
+                also check \(\textbf{w}\). This is what makes this scheme
+                code-binding.
+            </p>
+            <p>
+                We also want to check if \(\textbf{w}_j =
                 \textbf{r}^T\textbf{X}_j\) because if that were missing then we
                 can pass any vector \(\textbf{w}\) in our commitment that might
                 be a valid codeword (so it passes all the other checks) but
-                won&#39;t contain the opening. We already get position binding
-                by checking the hash is in the commitment (in
-                \(\text{VerCol.b}\)), so \(\text{VerCol.d}\) is a bit redundant
-                but there is no other way to check if the opening is in the
-                commitment.
+                won&#39;t contain the opening.
+            </p>
+            <p>
+                We already get position binding by checking the hash is in the
+                commitment (in \(\text{VerCol.b}\)), so \(\text{VerCol.d}\) is a
+                bit redundant but there is no other way to check if the opening
+                is in the commitment.
             </p>
         </div>
     </body>
