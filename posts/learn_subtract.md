@@ -10,7 +10,7 @@ When I was at McGill, I took a reading course where I covered game theory in blo
 
 ### Commitment from Interleaved Codes
 
-[Foundations of Data Availability Sampling] is a great paper that goes over a number of data availability schemes and how they differ by their so-called _erasure code commitments_. One such type of commitment the authors construct is the Interleaved Code Commitment which looks like this:
+[Foundations of Data Availability Sampling](https://eprint.iacr.org/2023/1079.pdf) is a great paper that goes over a number of data availability schemes and how they differ by their so-called _erasure code commitments_. One such type of commitment the authors construct is the Interleaved Code Commitment which looks like this:
 
 ![](./assets/interleaved_code_commitment.png)
 
